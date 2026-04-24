@@ -1,0 +1,147 @@
+--- Election Management System ---
+1. Add Candidate
+2. Cast Vote
+3. Display Results
+4. Find Winner
+5. Exit
+Enter choice: 1
+
+Enter Candidate ID: 1008
+Enter Name: Mayank Raj
+Enter Party: BJ
+
+Candidate Mayank Raj added successfully!
+
+--- Election Management System ---
+1. Add Candidate
+2. Cast Vote
+3. Display Results
+4. Find Winner
+5. Exit
+Enter choice: 1
+
+Enter Candidate ID: 108
+Enter Name: Tej
+Enter Party: RJ
+
+Candidate Tej added successfully!
+
+--- Election Management System ---
+1. Add Candidate
+2. Cast Vote
+3. Display Results
+4. Find Winner
+5. Exit
+Enter choice: 2
+
+Enter your unique Voter ID: 1008
+Enter Candidate ID to vote for: 1008
+
+Vote cast successfully for Mayank Raj!
+
+--- Election Management System ---
+1. Add Candidate
+2. Cast Vote
+3. Display Results
+4. Find Winner
+5. Exit
+Enter choice: 2
+
+Enter your unique Voter ID: 108
+Enter Candidate ID to vote for: 1008
+
+Vote cast successfully for Mayank Raj!
+
+--- Election Management System ---
+1. Add Candidate
+2. Cast Vote
+3. Display Results
+4. Find Winner
+5. Exit
+Enter choice: 2
+
+Enter your unique Voter ID: 10058
+Enter Candidate ID to vote for: 1008
+
+Vote cast successfully for Mayank Raj!
+
+--- Election Management System ---
+1. Add Candidate
+2. Cast Vote
+3. Display Results
+4. Find Winner
+5. Exit
+Enter choice: 1008
+
+Invalid Choice!
+
+--- Election Management System ---
+1. Add Candidate
+2. Cast Vote
+3. Display Results
+4. Find Winner
+5. Exit
+Enter choice: 2
+
+Enter your unique Voter ID: 1008
+
+Access Denied: Voter ID 1008 has already cast a vote!
+
+--- Election Management System ---
+1. Add Candidate
+2. Cast Vote
+3. Display Results
+4. Find Winner
+5. Exit
+Enter choice: 22
+
+Invalid Choice!
+
+--- Election Management System ---
+1. Add Candidate
+2. Cast Vote
+3. Display Results
+4. Find Winner
+5. Exit
+Enter choice: 2
+
+Enter your unique Voter ID: 102
+Enter Candidate ID to vote for: 1008
+
+Vote cast successfully for Mayank Raj!
+
+--- Election Management System ---
+1. Add Candidate
+2. Cast Vote
+3. Display Results
+4. Find Winner
+5. Exit
+Enter choice: 2
+
+Enter your unique Voter ID: 100
+Enter Candidate ID to vote for: 1008
+
+Vote cast successfully for Mayank Raj!
+
+--- Election Management System ---
+1. Add Candidate
+2. Cast Vote
+3. Display Results
+4. Find Winner
+5. Exit
+Enter choice: 3
+
+--- Election Results ---
+ID         Name                 Party                Votes     
+1008       Mayank Raj           BJ                   5         
+108        Tej                  RJ                   0         
+
+--- Election Management System ---
+1. Add Candidate
+2. Cast Vote
+3. Display Results
+4. Find Winner
+5. Exit
+Enter choice: 4
+
+WINNER: Mayank Raj from BJ with 5 votes!
