@@ -1,16 +1,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
+
+// --- Constants & Enums ---
+#define ADMIN_PASS "secure2024"
+
+typedef enum { REGISTRATION, VOTING, CLOSED } ElectionPhase;
 
 // --- Structures ---
-
 struct Candidate {
     int id;
     char name[50];
     char party[50];
-    char constituency[50];
     char symbol[20];
-    int age;
     int votes;
     struct Candidate* next;
 };
@@ -18,207 +21,142 @@ struct Candidate {
 struct Voter {
     int voterId;
     char name[50];
-    char address[100];
-    int age; // Added age to voter struct for consistency
+    int voterType; // 0: General, 1: Candidate
     int hasVoted; 
     struct Voter* next;
 };
 
-// Global Pointers
+// Global State
 struct Candidate* candidateHead = NULL;
 struct Voter* voterHead = NULL;
+ElectionPhase currentPhase = REGISTRATION;
 
-// --- Helper Functions ---
-
-int isIdDuplicate(int id) {
-    struct Candidate* cTemp = candidateHead;
-    while (cTemp != NULL) {
-        if (cTemp->id == id) return 1;
-        cTemp = cTemp->next;
-    }
-    struct Voter* vTemp = voterHead;
-    while (vTemp != NULL) {
-        if (vTemp->voterId == id) return 1;
-        vTemp = vTemp->next;
-    }
-    return 0;
+// --- Audit & Utility ---
+void logAction(const char* action) {
+    time_t now;
+    time(&now);
+    printf("[AUDIT LOG %s] %s\n", strtok(ctime(&now), "\n"), action);
 }
 
 struct Voter* findVoter(int id) {
     struct Voter* temp = voterHead;
-    while (temp != NULL) {
+    while (temp) {
         if (temp->voterId == id) return temp;
         temp = temp->next;
     }
     return NULL;
 }
 
-void internalRegisterVoter(int id, char* name, char* address, int age) {
+// --- Logic Modules ---
+
+void registerVoter() {
+    if (currentPhase != REGISTRATION) {
+        printf("Error: Registration phase has ended.\n");
+        return;
+    }
+    int id;
+    printf("Enter Voter ID: "); scanf("%d", &id);
+    if (findVoter(id)) { printf("Conflict: ID already exists.\n"); return; }
+    
     struct Voter* newNode = (struct Voter*)malloc(sizeof(struct Voter));
     newNode->voterId = id;
-    strcpy(newNode->name, name);
-    strcpy(newNode->address, address);
-    newNode->age = age;
+    printf("Enter Full Name: "); scanf(" %[^\n]", newNode->name);
+    newNode->voterType = 0; 
     newNode->hasVoted = 0;
     newNode->next = voterHead;
     voterHead = newNode;
+    
+    logAction("New voter registered.");
 }
 
-// --- Core Logic ---
-
-void addVoter() {
-    int id, age;
-    printf("\nEnter Voter ID: ");
-    scanf("%d", &id);
-
-    if (isIdDuplicate(id)) {
-        printf("Error: ID %d is already registered!\n", id);
+void nominateCandidate() {
+    if (currentPhase != REGISTRATION) {
+        printf("Error: Nomination phase has ended.\n");
         return;
     }
-
-    printf("Enter Age: ");
-    scanf("%d", &age);
-    if (age < 18) {
-        printf("Error: Voter must be at least 18 years old to register.\n");
-        return;
-    }
-
-    char name[50], address[100];
-    printf("Enter Name: ");
-    scanf(" %[^\n]", name);
-    printf("Enter Address: ");
-    scanf(" %[^\n]", address);
-
-    internalRegisterVoter(id, name, address, age);
-    printf("Voter registered successfully!\n");
-}
-
-void addCandidate() {
-    int id, age;
-    printf("\nEnter Candidate ID: ");
-    scanf("%d", &id);
-
-    if (isIdDuplicate(id)) {
-        printf("Error: ID %d is already taken!\n", id);
-        return;
-    }
-
-    printf("Enter Age: ");
-    scanf("%d", &age);
-    if (age < 18) {
-        printf("Error: Candidate must be at least 18 years old to contest.\n");
-        return;
-    }
+    int id;
+    printf("Enter Candidate ID: "); scanf("%d", &id);
+    if (findVoter(id)) { printf("Conflict: ID already in use.\n"); return; }
 
     struct Candidate* newNode = (struct Candidate*)malloc(sizeof(struct Candidate));
     newNode->id = id;
-    newNode->age = age;
-    
-    printf("Enter Name: ");
-    scanf(" %[^\n]", newNode->name);
-    printf("Enter Party: ");
-    scanf(" %[^\n]", newNode->party);
-    printf("Enter Constituency: ");
-    scanf(" %[^\n]", newNode->constituency);
-    printf("Enter Party Symbol: ");
-    scanf(" %[^\n]", newNode->symbol);
-    
+    printf("Enter Candidate Name: "); scanf(" %[^\n]", newNode->name);
+    printf("Enter Party Name: "); scanf(" %[^\n]", newNode->party);
+    printf("Enter Symbol: "); scanf(" %[^\n]", newNode->symbol);
     newNode->votes = 0;
     newNode->next = candidateHead;
     candidateHead = newNode;
 
-    // Candidate automatically registered as a voter
-    internalRegisterVoter(id, newNode->name, "Candidate Residence", age);
+    // Auto-register candidate as a Type 1 voter (cannot vote)
+    struct Voter* vNode = (struct Voter*)malloc(sizeof(struct Voter));
+    vNode->voterId = id;
+    strcpy(vNode->name, newNode->name);
+    vNode->voterType = 1;
+    vNode->hasVoted = 0;
+    vNode->next = voterHead;
+    voterHead = vNode;
 
-    printf("\nCandidate %s added and auto-registered as a voter!\n", newNode->name);
+    logAction("Candidate nomination accepted.");
 }
 
-void castVote() {
-    int vId, cId;
-    if (candidateHead == NULL) {
-        printf("\nNo candidates registered!\n");
+void processVote() {
+    if (currentPhase != VOTING) {
+        printf("Error: Voting booth is currently closed.\n");
+        return;
+    }
+    int vid, cid;
+    printf("Verification - Enter Voter ID: "); scanf("%d", &vid);
+    struct Voter* v = findVoter(vid);
+
+    if (!v || v->voterType != 0) {
+        printf("Security Alert: Unauthorized ID or Candidate attempting to vote.\n");
+        return;
+    }
+    if (v->hasVoted) {
+        printf("Access Denied: Duplicate voting attempt detected.\n");
         return;
     }
 
-    printf("\nEnter your unique Voter ID: ");
-    scanf("%d", &vId);
-
-    struct Voter* voter = findVoter(vId);
-    if (voter == NULL) {
-        printf("\nError: ID not found in registry!\n");
-        return;
-    }
-
-    if (voter->hasVoted) {
-        printf("\nAccess Denied: %s has already voted!\n", voter->name);
-        return;
-    }
-
-    printf("Enter Candidate ID to vote for: ");
-    scanf("%d", &cId);
-
-    struct Candidate* temp = candidateHead;
-    while (temp != NULL) {
-        if (temp->id == cId) {
-            temp->votes++;
-            voter->hasVoted = 1; 
-            printf("\nVote successful: %s voted for %s!\n", voter->name, temp->name);
+    printf("Ballot - Enter Candidate ID: "); scanf("%d", &cid);
+    struct Candidate* c = candidateHead;
+    while(c) {
+        if (c->id == cid) {
+            c->votes++;
+            v->hasVoted = 1;
+            logAction("Secure vote cast successfully.");
             return;
         }
-        temp = temp->next;
+        c = c->next;
     }
-    printf("\nCandidate ID %d not found.\n", cId);
+    printf("Error: Invalid Candidate ID.\n");
 }
 
-void displayResults() {
-    struct Candidate* temp = candidateHead;
-    if (temp == NULL) {
-        printf("\nNo candidates to display.\n");
-        return;
-    }
-    printf("\n%-5s %-15s %-15s %-5s %-10s\n", "ID", "Name", "Party", "Age", "Votes");
-    while (temp != NULL) {
-        printf("%-5d %-15s %-15s %-5d %-10d\n", temp->id, temp->name, temp->party, temp->age, temp->votes);
-        temp = temp->next;
-    }
-}
+void generateReports() {
+    char pass[20];
+    printf("Access Restricted. Enter Admin Password: "); scanf("%s", pass);
+    if (strcmp(pass, ADMIN_PASS) != 0) { printf("Unauthorized Access!\n"); return; }
 
-void cleanup() {
-    while (candidateHead != NULL) {
-        struct Candidate* temp = candidateHead;
-        candidateHead = candidateHead->next;
-        free(temp);
-    }
-    while (voterHead != NULL) {
-        struct Voter* temp = voterHead;
-        voterHead = voterHead->next;
-        free(temp);
+    printf("\n--- ELECTION AUDIT REPORT ---\n");
+    struct Candidate* c = candidateHead;
+    while(c) {
+        printf("[%s] %s: %d votes\n", c->party, c->name, c->votes);
+        c = c->next;
     }
 }
 
 int main() {
-    int choice, numVoters;
-
-    printf("--- Voter Registration Phase ---\n");
-    printf("How many voters would you like to register initially? ");
-    scanf("%d", &numVoters);
-    for(int i = 0; i < numVoters; i++) {
-        printf("\nRegistering Voter %d:", i + 1);
-        addVoter();
-    }
-
+    int choice;
     while (1) {
-        printf("\n--- Election Management System ---");
-        printf("\n1. Add More General Voters\n2. Add Candidate\n3. Cast Vote\n4. Display Results\n5. Exit\nChoice: ");
+        printf("\nPHASE: %s | 1.Voter Reg | 2.Nominate | 3.Start Voting | 4.CAST VOTE | 5.Report | 6.Exit\nChoice: ", 
+               currentPhase == REGISTRATION ? "REGISTRATION" : (currentPhase == VOTING ? "VOTING" : "CLOSED"));
         scanf("%d", &choice);
-
-        switch (choice) {
-            case 1: addVoter(); break;
-            case 2: addCandidate(); break;
-            case 3: castVote(); break;
-            case 4: displayResults(); break;
-            case 5: cleanup(); exit(0);
-            default: printf("Invalid choice.\n");
+        switch(choice) {
+            case 1: registerVoter(); break;
+            case 2: nominateCandidate(); break;
+            case 3: currentPhase = VOTING; logAction("Election phase moved to VOTING."); break;
+            case 4: processVote(); break;
+            case 5: generateReports(); break;
+            case 6: exit(0);
         }
     }
     return 0;
